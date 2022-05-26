@@ -1,5 +1,5 @@
 {
-    "name"          : "Manipulator3d",
+    "name"          : "Manipulator3D",
     "version"       : "0.0.1",
     "author"        : "Pedro Sousa ( Vor @ SketchPunk Labs )",
     "description"   : "3D Manipulator Gizmo for Threejs",
