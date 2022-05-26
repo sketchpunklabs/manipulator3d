@@ -5,6 +5,8 @@
 [![Patreon](https://img.shields.io/badge/Patreon-donate-red?style=flat-square&logo=youtube)](https://www.patreon.com/sketchpunk)
 [![Ko-Fi](https://img.shields.io/badge/Ko_Fi-donate-orange?style=flat-square&logo=youtube)](https://ko-fi.com/sketchpunk)
 
+<img src="https://c10.patreonusercontent.com/4/patreon-media/p/post/66941306/1b761d08be794bc7926a49dbcfce033f/eyJ3Ijo2MjB9/1.gif?token-time=1654819200&token-hash=hP0VfQMhyc7hSer_P4lweBqISVazEPIvZxjNXXSf2GI%3D">
+
 ### NPM Install ###
 ```
 npm install https://github.com/sketchpunklabs/manipulator3d
