@@ -96,12 +96,14 @@ export class ManipulatorData{
     }
 
     // UI data changed in relation to direction & distance from the camera
-    updateFromCamera( camPos, camRot ){
+    updateFromCamera( camPos, camRot, forceUpdate=false ){
         // If dragging or no change to camera since last update
-        if( this.isDragging || (
-            Math.abs( vec3_sqrLen( camPos, this.lastCamPos ) ) <= 0.000001 &&
-            Math.abs( quat_sqrLen( camRot, this.lastCamRot ) ) <= 0.000001
-        ) ) return this;
+        if(
+            (this.isDragging || (
+                Math.abs( vec3_sqrLen( camPos, this.lastCamPos ) ) <= 0.000001 &&
+                Math.abs( quat_sqrLen( camRot, this.lastCamRot ) ) <= 0.000001
+            )) && !forceUpdate
+        ) return this;
 
         vec3_copy( this.lastCamPos, camPos );
         quat_copy( this.lastCamRot, camRot );

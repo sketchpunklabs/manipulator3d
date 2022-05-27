@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ManipulatorMode } from './ManipulatorData.js';
 
 export class ManipulatorMesh extends THREE.Group{
+    // #region MAIN
     axisColors    = [ 0x81D773, 0x6DA9EA, 0xF7716A ];
     axisLines     = [];
     axisArcs      = [];
@@ -12,7 +13,6 @@ export class ManipulatorMesh extends THREE.Group{
     grpCtrl       = new THREE.Group();
     meshTracePnt  = null;
     meshTraceLine = null;
-    meshPlane     = null;
 
     colSelect     = 0xffffff;
     colOrigin     = 0xffff00;
@@ -136,20 +136,18 @@ export class ManipulatorMesh extends THREE.Group{
         this.origin = new THREE.Mesh( geoSphere, matBasic.clone() );
         this.grpCtrl.add( this.origin );
         this.add( this.grpCtrl );
-
-        this.meshPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1, 1 ), matBasic.clone() );
-        this.meshPlane.material.opacity = 0.1;
-        this.meshPlane.scale.set( 5, 5, 5 );
-        this.meshPlane.visible = false;
-        this.add( this.meshPlane );
     }
+
+    // #endregion
+
+    showGizmo(){ this.grpCtrl.visible = true; }
+    hideGizmo(){ this.grpCtrl.visible = false; }
 
     update( data ){
         if( !data.hasUpdated && !data.hasHit ) return;
 
         this.grpCtrl.scale.fromArray( data.scale );
         this.grpCtrl.position.fromArray( data.position );
-        if( data.activePlane === -1 ) this.meshPlane.visible = false;
 
         if( data.activeAxis === -2 && data.activeMode === ManipulatorMode.Scale ){
             this.origin.material.color.setHex( this.colSelect );
@@ -173,16 +171,6 @@ export class ManipulatorMesh extends THREE.Group{
 
             if( i === data.activePlane ){
                 this.axisTris[ i ].material.color.setHex( 0xffffff );
-                
-                const rot = [0,0,0];
-                if( i === 0 ) rot[ 1 ] = Math.PI * 0.5;
-                else if( i === 1 ) rot[ 0 ] = Math.PI * 0.5;
-                
-                if( !this.meshPlane.visible ){
-                    this.meshPlane.position.fromArray( data.position );
-                }
-                this.meshPlane.rotation.fromArray( rot );
-                this.meshPlane.visible = true;
             }
         }
 

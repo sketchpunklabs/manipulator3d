@@ -1,7 +1,8 @@
 // #region IMPORTS
 import { Raycaster }        from 'three';
 import { Ray }              from './RayIntersection.js';
-import { ManipulatorData }  from './ManipulatorData.js';
+import { ManipulatorData, ManipulatorMode } 
+                            from './ManipulatorData.js';
 import { ManipulatorMesh }  from './ManipulatorMesh.js';
 
 import {
@@ -59,34 +60,97 @@ export class Manipulator3D{
         const canvas   = renderer.domElement;
         this._renderer = renderer
 
+        // Special case when there is an onClick Handler on the canvas, it
+        // get triggered on mouse up, but if user did a drag action the click
+        // will trigger at the end. This can cause issues if using click as a way
+        // to select new attachments.
+        let stopClick = false;
+        canvas.addEventListener( 'click', e=>{
+            if( stopClick ){
+                e.stopImmediatePropagation();
+                stopClick = false;
+            }
+        });
+
         canvas.addEventListener( 'pointermove', e=>{
             this.update();
             this._updateRaycaster( e );
-            if( !this.data.isDragging ) this.data.onRayHover( this._ray );
-            else                        this.data.onRayMove( this._ray );
+
+            if( !this.data.isDragging ){
+                this.data.onRayHover( this._ray );
+            }else{
+                this.data.onRayMove( this._ray );
+                canvas.setPointerCapture( e.pointerId ); // Keep receiving events
+                e.preventDefault();
+                e.stopPropagation();
+            }
         });
 
-        canvas.addEventListener( "pointerdown", e=>{
+        canvas.addEventListener( 'pointerdown', e=>{
             this._updateRaycaster( e );
-            this.data.onRayDown( this._ray );
+            if( this.data.onRayDown( this._ray ) ){        
+                e.preventDefault();
+                e.stopPropagation();
+                stopClick = true;
+            }
         } );
 
-        canvas.addEventListener( "pointerup", e=>{
-            if( this.data.isDragging ) this.data.stopDrag();
+        canvas.addEventListener( 'pointerup', e=>{
+            if( this.data.isDragging ){
+                this.data.stopDrag();
+                canvas.releasePointerCapture( e.pointerId );
+            }
         });
     }
     // #endregion
     
     // #region METHODS
+    isDragging(){ return this.data.isDragging; }
+    isActive(){ return this.data.isActive; }
+
+    // Enable / disable gizmo
+    setActive( b ){
+        this.data.isActive = b;
+        if( this.mesh ) this.mesh.visible   = b;
+    }
+
+    // How much distance traveled on the trace line to register as 1 step
+    setTraceLineStepDistance( n ){ this.data.traceStep = n; return this; }
+    setScaleStep( n ){ this._scaleStep = n; return this; }
+    setRotationStep( n ){ this._rotateStep = n * Math.PI / 180; return this; }
+    
+    setScaleFactor( n ){ this.data.scaleFactor = n; return this; }
+
     attach( obj ){
         if( !this.data.isActive ) return;
         this.attachedObject = obj;
         this.data.setPosition( obj.position.toArray() );
         this.data.calcAxesPosition();
+        this.update( true );
     }
 
     detach(){
         this.attachedObject = null;
+    }
+
+    update( forceUpdate=false ){
+        if( !this.data.isActive && !forceUpdate ) return false;
+
+        // When camera changes, need data to be updated to reflect the changes
+        this.updateStateFromCamera( forceUpdate );
+        
+        if( (this.data.hasUpdated || this.data.hasHit) && this.mesh ){
+            this.mesh.update( this.data );
+            this.data.hasUpdated = false;
+            this.data.hasHit     = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    updateStateFromCamera( forceUpdate=false ){
+        this.data.updateFromCamera( this._camera.position.toArray(), this._camera.quaternion.toArray(), forceUpdate );
     }
     // #endregion
 
@@ -126,6 +190,12 @@ export class Manipulator3D{
         // Offset has prevent the snapping effect of translation
         vec3_sub( this._intersectOffset, this.data.position, this.data.intersectPos );
         
+        // When dealing with small objects, better to hide the gizmo during scale & rotation
+        // But leave the trace line visible as its really the only ui the user needs during dragging
+        if( this.data.activeMode !== ManipulatorMode.Translate ){
+            this.mesh.hideGizmo();
+        }
+
         this.data.hasUpdated = true; // Need mesh to update
         this._emit( 'dragstart' );
     }
@@ -138,6 +208,7 @@ export class Manipulator3D{
         // When doing dragging away from ui, the hover event won't trigger to undo
         // visual states, so call method at the end of the dragging to tidy things up.
         this.data.resetState();
+        this.mesh.showGizmo();
 
         this._emit( 'dragend' );
     }
@@ -195,31 +266,6 @@ export class Manipulator3D{
     off( evtName, fn ){ this._renderer.domElement.removeEventListener( evtName, fn ); }
     _emit( evtName, detail=null ){
         this._renderer.domElement.dispatchEvent( new CustomEvent( evtName, { detail, bubbles:true, cancelable:true, composed:false } ) ); 
-    }
-    // #endregion
-
-    // #region METHODS
-
-    // Enable / disable gizmo
-    setActive( b ){
-        this.data.isActive = b;
-        if( this.mesh ) this.mesh.visible   = b;
-    }
-
-    update( forceUpdate=false ){
-        if( !this.data.isActive && !forceUpdate ) return false;
-
-        // When camera changes, need data to be updated to reflect the changes
-        this.data.updateFromCamera( this._camera.position.toArray(), this._camera.quaternion.toArray() );
-        
-        if( (this.data.hasUpdated || this.data.hasHit) && this.mesh ){
-            this.mesh.update( this.data );
-            this.data.hasUpdated = false;
-            this.data.hasHit     = false;
-            return true;
-        }
-
-        return false;
     }
     // #endregion
 }
