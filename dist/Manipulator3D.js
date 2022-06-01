@@ -1,5 +1,6 @@
 // #region IMPORTS
-import { Raycaster }        from 'three';
+import { Raycaster, Vector3, Quaternion } 
+                            from 'three';
 import { Ray }              from './RayIntersection.js';
 import { ManipulatorData, ManipulatorMode } 
                             from './ManipulatorData.js';
@@ -34,6 +35,9 @@ export class Manipulator3D{
     _initDragPosition   = [0,0,0];              // Caching values at the start of a drag action
     _initDragQuaternion = [0,0,0,1];
     _initDragScale      = [0,0,0];
+
+    _3jsVec             = new Vector3();
+    _3jsQuat            = new Quaternion();
 
     constructor( scene, camera, renderer=null, excludeMesh=false ){
         this.data      = new ManipulatorData();
@@ -104,14 +108,38 @@ export class Manipulator3D{
     }
     // #endregion
     
+    // #region NON-MOUSE CONTROL METHODS ( XR Controller Ray Casting )
+    rayHover( rayCaster ){
+        this.update();
+        this._ray.fromCaster( rayCaster );
+        return this.data.onRayHover( this._ray );
+    }
+
+    rayMove( rayCaster ){
+        this.update();
+        this._ray.fromCaster( rayCaster );
+        return this.data.onRayMove( this._ray );
+    }
+
+    rayDown( rayCaster ){
+        this._ray.fromCaster( rayCaster );
+        return this.data.onRayDown( this._ray );
+    }
+
+    rayUp(){
+        if( this.data.isDragging ) this.data.stopDrag();
+    }
+    // #endregion
+
     // #region METHODS
     isDragging(){ return this.data.isDragging; }
     isActive(){ return this.data.isActive; }
 
     // Enable / disable gizmo
-    setActive( b ){
-        this.data.isActive = b;
-        if( this.mesh ) this.mesh.visible   = b;
+    setActive( isOn ){
+        this.data.isActive = isOn;
+        if( this.mesh ) this.mesh.visible = isOn;
+        if( isOn ) this.updateStateFromCamera();
     }
 
     // How much distance traveled on the trace line to register as 1 step
@@ -150,7 +178,14 @@ export class Manipulator3D{
     }
 
     updateStateFromCamera( forceUpdate=false ){
-        this.data.updateFromCamera( this._camera.position.toArray(), this._camera.quaternion.toArray(), forceUpdate );
+        // In VR, the camera can exists on a dolly which causes its position & rotation 
+        // to be stuck in local space. Need to get WorldSpace transform to properly compute
+        // the scaling factor else the scale values will be so small that mesh wouldn't
+        // be visible.
+        this._camera.getWorldPosition( this._3jsVec );
+        this._camera.getWorldQuaternion( this._3jsQuat );
+
+        this.data.updateFromCamera( this._3jsVec.toArray(), this._3jsQuat.toArray(), forceUpdate );
     }
     // #endregion
 
