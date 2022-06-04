@@ -1,30 +1,45 @@
 {
-    "name"          : "Manipulator3D",
-    "version"       : "0.0.1",
-    "author"        : "Pedro Sousa ( Vor @ SketchPunk Labs )",
-    "description"   : "3D Manipulator Gizmo for Threejs",
-    "keywords"      : [ "threejs", "gizmo", "ui", "3d" ],
-    "license"       : "MIT",
-    "homepage"      : "https://github.com/sketchpunklabs/manipulator3d#readme",
-    "repository"    : { "type": "git", "url": "git+https://github.com/sketchpunklabs/manipulator3d.git" },
-    "bugs"          : { "url": "https://github.com/sketchpunklabs/manipulator3d/issues" },
-    "files"         : [ "dist" ],
-    "main"          : "./dist/index.js",
-    "module"        : "./dist/index.js",
+    "name": "manipulator3d",
+    "version": "0.0.1",
+    "author": "Pedro Sousa ( Vor @ SketchPunk Labs )",
+    "description": "3D Manipulator Gizmo for Threejs",
+    "keywords": [
+        "threejs",
+        "gizmo",
+        "ui",
+        "3d"
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/sketchpunklabs/manipulator3d#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/sketchpunklabs/manipulator3d.git"
+    },
+    "bugs": {
+        "url": "https://github.com/sketchpunklabs/manipulator3d/issues"
+    },
+    "files": [
+        "dist"
+    ],
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
     "exports": {
         ".": {
-            "import"    : "./dist/index.js"
+            "import": "./dist/index.js"
         }
     },
     "scripts": {
-        "dev" : "vite"
+        "dev": "vite",
+        "build": "rollup -c"
     },
-
     "dependencies": {
-        "three" : "^0.138.2"
+        "three": "^0.138.2"
     },
-    
     "devDependencies": {
+        "@babel/core": "^7.18.2",
+        "@babel/preset-env": "^7.18.2",
+        "@rollup/plugin-babel": "^5.3.1",
+        "rollup": "^2.75.5",
         "vite": "^2.8.6"
     }
 }
