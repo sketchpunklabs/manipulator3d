@@ -7,9 +7,11 @@
 
 <img src="https://c10.patreonusercontent.com/4/patreon-media/p/post/66941306/1b761d08be794bc7926a49dbcfce033f/eyJ3Ijo2MjB9/1.gif?token-time=1654819200&token-hash=hP0VfQMhyc7hSer_P4lweBqISVazEPIvZxjNXXSf2GI%3D">
 
+https://www.npmjs.com/package/manipulator3d
+
 ### NPM Install ###
 ```
-npm install https://github.com/sketchpunklabs/manipulator3d
+npm install manipulator3d
 ```
 
 ### Development Setup ###
