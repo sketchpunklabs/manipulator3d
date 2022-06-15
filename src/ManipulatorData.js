@@ -112,24 +112,10 @@ export class ManipulatorData{
     }
     
     resetState(){
-        const lastState = [ false, false, false ];
-        const a         = this.axes;
-        
-        let i, ii, ax;
-        for( i=0; i < 3; i++ ){
-            ax = a[ i ];
-            if( ax.isActive ){
-                lastState[ i ] = true;
-                ax.isActive    = false;
-            }
-        }
-
         this.traceLine.isActive = false;
         this.activeMode         = ManipulatorMode.Translate;
         this.activeAxis         = -1;
         this.activePlane        = -1;
-
-        return lastState;
     }
     // #endregion
 
@@ -288,7 +274,8 @@ export class ManipulatorData{
             return false;
         }
 
-        const lastState = this.resetState(); // Reset axis & collect last axes state
+        const lastAxis = this.activeAxis;
+        this.resetState();
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         let hit = false;
@@ -301,15 +288,11 @@ export class ManipulatorData{
         }
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        const a = this.axes;
-        for( let i=0; i < 3; i++ ){
-            if( a[i].isActive != lastState[i] ){
-                this.hasUpdated = true;
-                break;
-            }
+        if( lastAxis !== this.activeAxis ){
+            this.hasUpdated = true;
         }
 
-        this.hasHit = true;
+        this.hasHit = hit;
         return hit;
     }
 

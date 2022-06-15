@@ -51,8 +51,8 @@ export default ( { command, mode } ) => {
                 minify          : false,
 
                 lib             : {
-                    entry   : path.resolve( __dirname, "src/index.ts" ),
-                    name    : "oito_ray",
+                    entry   : path.resolve( __dirname, "src/index.js" ),
+                    name    : "Manipulator3D",
                     formats : [ "es", "cjs" ],
                 },
 
