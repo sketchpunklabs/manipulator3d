@@ -52,6 +52,10 @@ export class ManipulatorData{
     midPointLen     = 0.55;         // How far from origin to mark compute mid points
     sclPointLen     = 1.8;          // How far from origin to mark compute scale points
 
+    useTranslate    = true;
+    useScale        = true;
+    useRotate       = true;
+
     axes            = [             // Information about each axis
         { dir: [1,0,0], endPos:[1,0,0], midPos:[0,0,0], sclPos:[0,0,0] }, // X
         { dir: [0,1,0], endPos:[0,1,0], midPos:[0,0,0], sclPos:[0,0,0] }, // Y
@@ -278,14 +282,15 @@ export class ManipulatorData{
         this.resetState();
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        let hit = false;
-        if( ! (hit = this._testPoints( ray )) ){
-            if( ! (hit = this._testPlanes( ray )) ){
-                if( ! (hit = this._testAxis( ray )) ){
-                    hit = this._testArc( ray );
-                }
-            }
-        }
+        // Scale
+        let hit = ( this.useScale && this._testPoints( ray ) );        
+
+        // Translation
+        hit = hit || ( this.useTranslate && this._testPlanes( ray ) );
+        hit = hit || ( this.useTranslate && this._testAxis( ray ) );
+
+        // Rotation
+        hit = hit || ( this.useRotate && this._testArc( ray ) );
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if( lastAxis !== this.activeAxis ){

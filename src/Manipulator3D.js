@@ -140,7 +140,13 @@ export class Manipulator3D{
         this.data.isActive = isOn;
         if( this.mesh ) this.mesh.visible = isOn;
         if( isOn ) this.updateStateFromCamera();
+        return this;
     }
+
+    // Enable/Disable different modes : Will hide render bits & disable ray intersections
+    useTranslate( b ){ this.data.useTranslate = b; this.mesh.updateLook( this.data ); return this; }
+    useRotate( b ){    this.data.useRotate    = b; this.mesh.updateLook( this.data ); return this; }
+    useScale( b ){     this.data.useScale     = b; this.mesh.updateLook( this.data ); return this; }
 
     // How much distance traveled on the trace line to register as 1 step
     setTraceLineStepDistance( n ){ this.data.traceStep = n; return this; }

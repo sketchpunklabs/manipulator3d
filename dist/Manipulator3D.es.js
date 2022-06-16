@@ -4,8 +4,7 @@ var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
-import * as THREE from "three";
-import { Raycaster, Vector3, Quaternion } from "three";
+import { Group, MeshBasicMaterial, DoubleSide, LineBasicMaterial, BufferGeometry, Float32BufferAttribute, SphereGeometry, TorusGeometry, CylinderGeometry, Mesh, Line, Raycaster, Vector3, Quaternion } from "three";
 function vec3_copy(out, a) {
   out[0] = a[0];
   out[1] = a[1];
@@ -252,6 +251,9 @@ class ManipulatorData {
     __publicField(this, "axisLen", 1.5);
     __publicField(this, "midPointLen", 0.55);
     __publicField(this, "sclPointLen", 1.8);
+    __publicField(this, "useTranslate", true);
+    __publicField(this, "useScale", true);
+    __publicField(this, "useRotate", true);
     __publicField(this, "axes", [
       { dir: [1, 0, 0], endPos: [1, 0, 0], midPos: [0, 0, 0], sclPos: [0, 0, 0] },
       { dir: [0, 1, 0], endPos: [0, 1, 0], midPos: [0, 0, 0], sclPos: [0, 0, 0] },
@@ -414,14 +416,10 @@ class ManipulatorData {
     }
     const lastAxis = this.activeAxis;
     this.resetState();
-    let hit = false;
-    if (!(hit = this._testPoints(ray))) {
-      if (!(hit = this._testPlanes(ray))) {
-        if (!(hit = this._testAxis(ray))) {
-          hit = this._testArc(ray);
-        }
-      }
-    }
+    let hit = this.useScale && this._testPoints(ray);
+    hit = hit || this.useTranslate && this._testPlanes(ray);
+    hit = hit || this.useTranslate && this._testAxis(ray);
+    hit = hit || this.useRotate && this._testArc(ray);
     if (lastAxis !== this.activeAxis) {
       this.hasUpdated = true;
     }
@@ -524,15 +522,15 @@ class ManipulatorData {
     return false;
   }
 }
-class ManipulatorMesh extends THREE.Group {
+class ManipulatorMesh extends Group {
   constructor(data) {
     super();
     __publicField(this, "axisColors", [8509299, 7186922, 16216426]);
     __publicField(this, "axisLines", []);
     __publicField(this, "axisArcs", []);
-    __publicField(this, "axisBoxes", []);
+    __publicField(this, "axisPoints", []);
     __publicField(this, "axisTris", []);
-    __publicField(this, "grpCtrl", new THREE.Group());
+    __publicField(this, "grpCtrl", new Group());
     __publicField(this, "meshTracePnt", null);
     __publicField(this, "meshTraceLine", null);
     __publicField(this, "colSelect", 16777215);
@@ -543,17 +541,17 @@ class ManipulatorMesh extends THREE.Group {
     const arcThickness = 0.03;
     const sclDistance = data.sclPointLen;
     this.visible = false;
-    const matBasic = new THREE.MeshBasicMaterial({
+    const matBasic = new MeshBasicMaterial({
       depthTest: false,
       depthWrite: false,
       fog: false,
       toneMapped: false,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
       opacity: 1,
       color: 16777215
     });
-    const matLine = new THREE.LineBasicMaterial({
+    const matLine = new LineBasicMaterial({
       depthTest: false,
       depthWrite: false,
       fog: false,
@@ -561,58 +559,58 @@ class ManipulatorMesh extends THREE.Group {
       transparent: true,
       color: 9474192
     });
-    const geoTrace = new THREE.BufferGeometry();
-    geoTrace.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, 0, 100, 0], 3));
-    const geoTri = new THREE.BufferGeometry();
-    geoTri.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, data.midPointLen, 0, 0, 0, data.midPointLen, 0], 3));
-    const geoSphere = new THREE.SphereGeometry(0.1, 8, 8);
-    const geoArc = new THREE.TorusGeometry(arcRadius, arcThickness, 3, 10, PIH);
-    const geoAxisLine = new THREE.CylinderGeometry(lineRadius, lineRadius, data.axisLen, 3);
+    const geoTrace = new BufferGeometry();
+    geoTrace.setAttribute("position", new Float32BufferAttribute([0, 0, 0, 0, 100, 0], 3));
+    const geoTri = new BufferGeometry();
+    geoTri.setAttribute("position", new Float32BufferAttribute([0, 0, 0, data.midPointLen, 0, 0, 0, data.midPointLen, 0], 3));
+    const geoSphere = new SphereGeometry(0.1, 8, 8);
+    const geoArc = new TorusGeometry(arcRadius, arcThickness, 3, 10, PIH);
+    const geoAxisLine = new CylinderGeometry(lineRadius, lineRadius, data.axisLen, 3);
     geoAxisLine.translate(0, data.axisLen * 0.5, 0);
-    const yAxisLine = new THREE.Mesh(geoAxisLine, matBasic.clone());
+    const yAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     this.grpCtrl.add(yAxisLine);
-    const zAxisLine = new THREE.Mesh(geoAxisLine, matBasic.clone());
+    const zAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     zAxisLine.rotation.x = PIH;
     this.grpCtrl.add(zAxisLine);
-    const xAxisLine = new THREE.Mesh(geoAxisLine, matBasic.clone());
+    const xAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     xAxisLine.rotation.z = -PIH;
     this.grpCtrl.add(xAxisLine);
     this.axisLines.push(xAxisLine, yAxisLine, zAxisLine);
-    const zAxisArc = new THREE.Mesh(geoArc, matBasic.clone());
+    const zAxisArc = new Mesh(geoArc, matBasic.clone());
     this.grpCtrl.add(zAxisArc);
-    const xAxisArc = new THREE.Mesh(geoArc, matBasic.clone());
+    const xAxisArc = new Mesh(geoArc, matBasic.clone());
     xAxisArc.rotation.y = -PIH;
     this.grpCtrl.add(xAxisArc);
-    const yAxisArc = new THREE.Mesh(geoArc, matBasic.clone());
+    const yAxisArc = new Mesh(geoArc, matBasic.clone());
     yAxisArc.rotation.x = PIH;
     this.grpCtrl.add(yAxisArc);
     this.axisArcs.push(xAxisArc, yAxisArc, zAxisArc);
-    const zAxisBox = new THREE.Mesh(geoSphere, matBasic.clone());
-    zAxisBox.position.z = sclDistance;
-    this.grpCtrl.add(zAxisBox);
-    const xAxisBox = new THREE.Mesh(geoSphere, matBasic.clone());
-    xAxisBox.position.x = sclDistance;
-    this.grpCtrl.add(xAxisBox);
-    const yAxisBox = new THREE.Mesh(geoSphere, matBasic.clone());
-    yAxisBox.position.y = sclDistance;
-    this.grpCtrl.add(yAxisBox);
-    this.axisBoxes.push(xAxisBox, yAxisBox, zAxisBox);
-    const zAxisTri = new THREE.Mesh(geoTri, matBasic.clone());
+    const zAxisPnt = new Mesh(geoSphere, matBasic.clone());
+    zAxisPnt.position.z = sclDistance;
+    this.grpCtrl.add(zAxisPnt);
+    const xAxisPnt = new Mesh(geoSphere, matBasic.clone());
+    xAxisPnt.position.x = sclDistance;
+    this.grpCtrl.add(xAxisPnt);
+    const yAxisPnt = new Mesh(geoSphere, matBasic.clone());
+    yAxisPnt.position.y = sclDistance;
+    this.grpCtrl.add(yAxisPnt);
+    this.axisPoints.push(xAxisPnt, yAxisPnt, zAxisPnt);
+    const zAxisTri = new Mesh(geoTri, matBasic.clone());
     this.grpCtrl.add(zAxisTri);
-    const yAxisTri = new THREE.Mesh(geoTri, matBasic.clone());
+    const yAxisTri = new Mesh(geoTri, matBasic.clone());
     yAxisTri.rotation.x = PIH;
     this.grpCtrl.add(yAxisTri);
-    const xAxisTri = new THREE.Mesh(geoTri, matBasic.clone());
+    const xAxisTri = new Mesh(geoTri, matBasic.clone());
     xAxisTri.rotation.y = -PIH;
     this.grpCtrl.add(xAxisTri);
     this.axisTris.push(xAxisTri, yAxisTri, zAxisTri);
-    this.meshTraceLine = new THREE.Line(geoTrace, matLine);
+    this.meshTraceLine = new Line(geoTrace, matLine);
     this.meshTraceLine.visible = false;
     this.add(this.meshTraceLine);
-    this.meshTracePnt = new THREE.Mesh(geoSphere, matBasic.clone());
+    this.meshTracePnt = new Mesh(geoSphere, matBasic.clone());
     this.meshTracePnt.visible = false;
     this.add(this.meshTracePnt);
-    this.origin = new THREE.Mesh(geoSphere, matBasic.clone());
+    this.origin = new Mesh(geoSphere, matBasic.clone());
     this.grpCtrl.add(this.origin);
     this.add(this.grpCtrl);
   }
@@ -621,6 +619,16 @@ class ManipulatorMesh extends THREE.Group {
   }
   hideGizmo() {
     this.grpCtrl.visible = false;
+  }
+  updateLook(data) {
+    let itm;
+    for (itm of this.axisArcs)
+      itm.visible = data.useRotate;
+    this.origin.visible = data.useScale;
+    for (itm of this.axisPoints)
+      itm.visible = data.useScale;
+    for (itm of this.axisTris)
+      itm.visible = data.useTranslate;
   }
   update(data) {
     if (!data.hasUpdated && !data.hasHit)
@@ -635,7 +643,7 @@ class ManipulatorMesh extends THREE.Group {
     for (let i = 0; i < 3; i++) {
       this.axisLines[i].material.color.setHex(this.axisColors[i]);
       this.axisArcs[i].material.color.setHex(this.axisColors[i]);
-      this.axisBoxes[i].material.color.setHex(this.axisColors[i]);
+      this.axisPoints[i].material.color.setHex(this.axisColors[i]);
       this.axisTris[i].material.color.setHex(this.axisColors[i]);
       if (i === data.activeAxis) {
         switch (data.activeMode) {
@@ -646,7 +654,7 @@ class ManipulatorMesh extends THREE.Group {
             this.axisArcs[i].material.color.setHex(this.colSelect);
             break;
           case ManipulatorMode.Scale:
-            this.axisBoxes[i].material.color.setHex(this.colSelect);
+            this.axisPoints[i].material.color.setHex(this.colSelect);
             break;
         }
       }
@@ -773,6 +781,22 @@ class Manipulator3D {
       this.mesh.visible = isOn;
     if (isOn)
       this.updateStateFromCamera();
+    return this;
+  }
+  useTranslate(b) {
+    this.data.useTranslate = b;
+    this.mesh.updateLook(this.data);
+    return this;
+  }
+  useRotate(b) {
+    this.data.useRotate = b;
+    this.mesh.updateLook(this.data);
+    return this;
+  }
+  useScale(b) {
+    this.data.useScale = b;
+    this.mesh.updateLook(this.data);
+    return this;
   }
   setTraceLineStepDistance(n) {
     this.data.traceStep = n;
