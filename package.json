@@ -1,6 +1,6 @@
 {
     "name"          : "manipulator3d",
-    "version"       : "0.0.4",
+    "version"       : "0.0.5",
     "author"        : "Pedro Sousa ( Vor @ SketchPunk Labs )",
     "description"   : "3D Manipulator Gizmo for Threejs",
     "keywords"      : [ "threejs", "gizmo", "ui", "3d" ],
@@ -9,12 +9,12 @@
     "repository"    : { "type": "git", "url": "git+https://github.com/sketchpunklabs/manipulator3d.git" },
     "bugs"          : { "url": "https://github.com/sketchpunklabs/manipulator3d/issues" },
     "files"         : [ "dist" ],
-    "main"          : "./dist/Manipulator3D.cjs.js",
-    "module"        : "./dist/Manipulator3D.es.js",
+    "main"          : "./dist/manipulator3d.cjs.js",
+    "module"        : "./dist/manipulator3d.es.js",
     "exports": {
         ".": {
-            "import"    : "./dist/Manipulator3D.es.js",
-            "require"   : "./dist/Manipulator3D.cjs.js"
+            "import"    : "./dist/manipulator3d.es.js",
+            "require"   : "./dist/manipulator3d.cjs.js"
         }
     },
     "scripts": {
