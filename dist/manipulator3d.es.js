@@ -1,12 +1,10 @@
-"use strict";
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
-Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-var three = require("three");
+import { Group, MeshBasicMaterial, DoubleSide, LineBasicMaterial, BufferGeometry, Float32BufferAttribute, SphereGeometry, TorusGeometry, CylinderGeometry, Mesh, Line, Raycaster, Vector3, Quaternion } from "three";
 function vec3_copy(out, a) {
   out[0] = a[0];
   out[1] = a[1];
@@ -524,7 +522,7 @@ class ManipulatorData {
     return false;
   }
 }
-class ManipulatorMesh extends three.Group {
+class ManipulatorMesh extends Group {
   constructor(data) {
     super();
     __publicField(this, "axisColors", [8509299, 7186922, 16216426]);
@@ -532,7 +530,7 @@ class ManipulatorMesh extends three.Group {
     __publicField(this, "axisArcs", []);
     __publicField(this, "axisPoints", []);
     __publicField(this, "axisTris", []);
-    __publicField(this, "grpCtrl", new three.Group());
+    __publicField(this, "grpCtrl", new Group());
     __publicField(this, "meshTracePnt", null);
     __publicField(this, "meshTraceLine", null);
     __publicField(this, "colSelect", 16777215);
@@ -543,17 +541,17 @@ class ManipulatorMesh extends three.Group {
     const arcThickness = 0.03;
     const sclDistance = data.sclPointLen;
     this.visible = false;
-    const matBasic = new three.MeshBasicMaterial({
+    const matBasic = new MeshBasicMaterial({
       depthTest: false,
       depthWrite: false,
       fog: false,
       toneMapped: false,
       transparent: true,
-      side: three.DoubleSide,
+      side: DoubleSide,
       opacity: 1,
       color: 16777215
     });
-    const matLine = new three.LineBasicMaterial({
+    const matLine = new LineBasicMaterial({
       depthTest: false,
       depthWrite: false,
       fog: false,
@@ -561,58 +559,58 @@ class ManipulatorMesh extends three.Group {
       transparent: true,
       color: 9474192
     });
-    const geoTrace = new three.BufferGeometry();
-    geoTrace.setAttribute("position", new three.Float32BufferAttribute([0, 0, 0, 0, 100, 0], 3));
-    const geoTri = new three.BufferGeometry();
-    geoTri.setAttribute("position", new three.Float32BufferAttribute([0, 0, 0, data.midPointLen, 0, 0, 0, data.midPointLen, 0], 3));
-    const geoSphere = new three.SphereGeometry(0.1, 8, 8);
-    const geoArc = new three.TorusGeometry(arcRadius, arcThickness, 3, 10, PIH);
-    const geoAxisLine = new three.CylinderGeometry(lineRadius, lineRadius, data.axisLen, 3);
+    const geoTrace = new BufferGeometry();
+    geoTrace.setAttribute("position", new Float32BufferAttribute([0, 0, 0, 0, 100, 0], 3));
+    const geoTri = new BufferGeometry();
+    geoTri.setAttribute("position", new Float32BufferAttribute([0, 0, 0, data.midPointLen, 0, 0, 0, data.midPointLen, 0], 3));
+    const geoSphere = new SphereGeometry(0.1, 8, 8);
+    const geoArc = new TorusGeometry(arcRadius, arcThickness, 3, 10, PIH);
+    const geoAxisLine = new CylinderGeometry(lineRadius, lineRadius, data.axisLen, 3);
     geoAxisLine.translate(0, data.axisLen * 0.5, 0);
-    const yAxisLine = new three.Mesh(geoAxisLine, matBasic.clone());
+    const yAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     this.grpCtrl.add(yAxisLine);
-    const zAxisLine = new three.Mesh(geoAxisLine, matBasic.clone());
+    const zAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     zAxisLine.rotation.x = PIH;
     this.grpCtrl.add(zAxisLine);
-    const xAxisLine = new three.Mesh(geoAxisLine, matBasic.clone());
+    const xAxisLine = new Mesh(geoAxisLine, matBasic.clone());
     xAxisLine.rotation.z = -PIH;
     this.grpCtrl.add(xAxisLine);
     this.axisLines.push(xAxisLine, yAxisLine, zAxisLine);
-    const zAxisArc = new three.Mesh(geoArc, matBasic.clone());
+    const zAxisArc = new Mesh(geoArc, matBasic.clone());
     this.grpCtrl.add(zAxisArc);
-    const xAxisArc = new three.Mesh(geoArc, matBasic.clone());
+    const xAxisArc = new Mesh(geoArc, matBasic.clone());
     xAxisArc.rotation.y = -PIH;
     this.grpCtrl.add(xAxisArc);
-    const yAxisArc = new three.Mesh(geoArc, matBasic.clone());
+    const yAxisArc = new Mesh(geoArc, matBasic.clone());
     yAxisArc.rotation.x = PIH;
     this.grpCtrl.add(yAxisArc);
     this.axisArcs.push(xAxisArc, yAxisArc, zAxisArc);
-    const zAxisPnt = new three.Mesh(geoSphere, matBasic.clone());
+    const zAxisPnt = new Mesh(geoSphere, matBasic.clone());
     zAxisPnt.position.z = sclDistance;
     this.grpCtrl.add(zAxisPnt);
-    const xAxisPnt = new three.Mesh(geoSphere, matBasic.clone());
+    const xAxisPnt = new Mesh(geoSphere, matBasic.clone());
     xAxisPnt.position.x = sclDistance;
     this.grpCtrl.add(xAxisPnt);
-    const yAxisPnt = new three.Mesh(geoSphere, matBasic.clone());
+    const yAxisPnt = new Mesh(geoSphere, matBasic.clone());
     yAxisPnt.position.y = sclDistance;
     this.grpCtrl.add(yAxisPnt);
     this.axisPoints.push(xAxisPnt, yAxisPnt, zAxisPnt);
-    const zAxisTri = new three.Mesh(geoTri, matBasic.clone());
+    const zAxisTri = new Mesh(geoTri, matBasic.clone());
     this.grpCtrl.add(zAxisTri);
-    const yAxisTri = new three.Mesh(geoTri, matBasic.clone());
+    const yAxisTri = new Mesh(geoTri, matBasic.clone());
     yAxisTri.rotation.x = PIH;
     this.grpCtrl.add(yAxisTri);
-    const xAxisTri = new three.Mesh(geoTri, matBasic.clone());
+    const xAxisTri = new Mesh(geoTri, matBasic.clone());
     xAxisTri.rotation.y = -PIH;
     this.grpCtrl.add(xAxisTri);
     this.axisTris.push(xAxisTri, yAxisTri, zAxisTri);
-    this.meshTraceLine = new three.Line(geoTrace, matLine);
+    this.meshTraceLine = new Line(geoTrace, matLine);
     this.meshTraceLine.visible = false;
     this.add(this.meshTraceLine);
-    this.meshTracePnt = new three.Mesh(geoSphere, matBasic.clone());
+    this.meshTracePnt = new Mesh(geoSphere, matBasic.clone());
     this.meshTracePnt.visible = false;
     this.add(this.meshTracePnt);
-    this.origin = new three.Mesh(geoSphere, matBasic.clone());
+    this.origin = new Mesh(geoSphere, matBasic.clone());
     this.grpCtrl.add(this.origin);
     this.add(this.grpCtrl);
   }
@@ -691,7 +689,7 @@ class Manipulator3D {
     __publicField(this, "attachedObject", null);
     __publicField(this, "_camera", null);
     __publicField(this, "_renderer", null);
-    __publicField(this, "_caster", new three.Raycaster());
+    __publicField(this, "_caster", new Raycaster());
     __publicField(this, "_ray", new Ray());
     __publicField(this, "_scaleStep", 0.1);
     __publicField(this, "_rotateStep", 10 * Math.PI / 180);
@@ -699,8 +697,41 @@ class Manipulator3D {
     __publicField(this, "_initDragPosition", [0, 0, 0]);
     __publicField(this, "_initDragQuaternion", [0, 0, 0, 1]);
     __publicField(this, "_initDragScale", [0, 0, 0]);
-    __publicField(this, "_3jsVec", new three.Vector3());
-    __publicField(this, "_3jsQuat", new three.Quaternion());
+    __publicField(this, "_3jsVec", new Vector3());
+    __publicField(this, "_3jsQuat", new Quaternion());
+    __publicField(this, "_stopClick", false);
+    __publicField(this, "_onClick", (e) => {
+      if (this._stopClick) {
+        e.stopImmediatePropagation();
+        this._stopClick = false;
+      }
+    });
+    __publicField(this, "_onPointerMove", (e) => {
+      this.update();
+      this._updateRaycaster(e);
+      if (!this.data.isDragging) {
+        this.data.onRayHover(this._ray);
+      } else {
+        this.data.onRayMove(this._ray);
+        this._getCanvas().setPointerCapture(e.pointerId);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    __publicField(this, "_onPointerDown", (e) => {
+      this._updateRaycaster(e);
+      if (this.data.onRayDown(this._ray)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._stopClick = true;
+      }
+    });
+    __publicField(this, "_onPointerUp", (e) => {
+      if (this.data.isDragging) {
+        this.data.stopDrag();
+        this._getCanvas().releasePointerCapture(e.pointerId);
+      }
+    });
     this.data = new ManipulatorData();
     this._camera = camera;
     if (!excludeMesh) {
@@ -717,41 +748,13 @@ class Manipulator3D {
     this.update(true);
   }
   setRenderer(renderer) {
-    const canvas = renderer.domElement;
+    this.removeEventListeners();
     this._renderer = renderer;
-    let stopClick = false;
-    canvas.addEventListener("click", (e) => {
-      if (stopClick) {
-        e.stopImmediatePropagation();
-        stopClick = false;
-      }
-    });
-    canvas.addEventListener("pointermove", (e) => {
-      this.update();
-      this._updateRaycaster(e);
-      if (!this.data.isDragging) {
-        this.data.onRayHover(this._ray);
-      } else {
-        this.data.onRayMove(this._ray);
-        canvas.setPointerCapture(e.pointerId);
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-    canvas.addEventListener("pointerdown", (e) => {
-      this._updateRaycaster(e);
-      if (this.data.onRayDown(this._ray)) {
-        e.preventDefault();
-        e.stopPropagation();
-        stopClick = true;
-      }
-    });
-    canvas.addEventListener("pointerup", (e) => {
-      if (this.data.isDragging) {
-        this.data.stopDrag();
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    });
+    this.addEventListeners();
+  }
+  _getCanvas() {
+    var _a;
+    return (_a = this._renderer) == null ? void 0 : _a.domElement;
   }
   rayHover(rayCaster) {
     this.update();
@@ -844,6 +847,24 @@ class Manipulator3D {
     this._camera.getWorldQuaternion(this._3jsQuat);
     this.data.updateFromCamera(this._3jsVec.toArray(), this._3jsQuat.toArray(), forceUpdate);
   }
+  addEventListeners() {
+    const canvas = this._getCanvas();
+    if (!canvas)
+      return;
+    canvas.addEventListener("click", this._onClick);
+    canvas.addEventListener("pointermove", this._onPointerMove);
+    canvas.addEventListener("pointerdown", this._onPointerDown);
+    canvas.addEventListener("pointerup", this._onPointerUp);
+  }
+  removeEventListeners() {
+    const canvas = this._getCanvas();
+    if (!canvas)
+      return;
+    canvas.removeEventListener("click", this._onClick);
+    canvas.removeEventListener("pointermove", this._onPointerMove);
+    canvas.removeEventListener("pointerdown", this._onPointerDown);
+    canvas.removeEventListener("pointerup", this._onPointerUp);
+  }
   isDragging() {
     return this.data.isDragging;
   }
@@ -915,7 +936,4 @@ class Manipulator3D {
     this._renderer.domElement.dispatchEvent(new CustomEvent(evtName, { detail, bubbles: true, cancelable: true, composed: false }));
   }
 }
-exports.Manipulator3D = Manipulator3D;
-exports.ManipulatorData = ManipulatorData;
-exports.ManipulatorMesh = ManipulatorMesh;
-exports.ManipulatorMode = ManipulatorMode;
+export { Manipulator3D, ManipulatorData, ManipulatorMesh, ManipulatorMode };
