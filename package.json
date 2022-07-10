@@ -20,11 +20,12 @@
         "dev" : "vite"
     },
 
-    "dependencies": {
+    "peerDependencies": {
         "three" : "^0.138.2"
     },
     
     "devDependencies": {
+        "three" : "^0.138.2",
         "vite": "^2.8.6"
     }
 }
