@@ -39,6 +39,14 @@ export class Manipulator3D{
     _3jsVec             = new Vector3();
     _3jsQuat            = new Quaternion();
 
+    /**
+     * Special case when there is an onClick Handler on the canvas, it
+     * get triggered on mouse up, but if user did a drag action the click
+     * will trigger at the end. This can cause issues if using click as a way
+     * to select new attachments.
+     */
+    _stopClick          = false;
+
     constructor( scene, camera, renderer=null, excludeMesh=false ){
         this.data      = new ManipulatorData();
         this._camera   = camera;
@@ -61,50 +69,14 @@ export class Manipulator3D{
 
     // Can set the renderer at a later point, sets up canvas listeners
     setRenderer( renderer ){
-        const canvas   = renderer.domElement;
+        this.removeEventListeners();
+
         this._renderer = renderer
+        this.addEventListeners();
+    }
 
-        // Special case when there is an onClick Handler on the canvas, it
-        // get triggered on mouse up, but if user did a drag action the click
-        // will trigger at the end. This can cause issues if using click as a way
-        // to select new attachments.
-        let stopClick = false;
-        canvas.addEventListener( 'click', e=>{
-            if( stopClick ){
-                e.stopImmediatePropagation();
-                stopClick = false;
-            }
-        });
-
-        canvas.addEventListener( 'pointermove', e=>{
-            this.update();
-            this._updateRaycaster( e );
-
-            if( !this.data.isDragging ){
-                this.data.onRayHover( this._ray );
-            }else{
-                this.data.onRayMove( this._ray );
-                canvas.setPointerCapture( e.pointerId ); // Keep receiving events
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-
-        canvas.addEventListener( 'pointerdown', e=>{
-            this._updateRaycaster( e );
-            if( this.data.onRayDown( this._ray ) ){        
-                e.preventDefault();
-                e.stopPropagation();
-                stopClick = true;
-            }
-        } );
-
-        canvas.addEventListener( 'pointerup', e=>{
-            if( this.data.isDragging ){
-                this.data.stopDrag();
-                canvas.releasePointerCapture( e.pointerId );
-            }
-        });
+    _getCanvas(){
+        return this._renderer?.domElement;
     }
     // #endregion
     
@@ -192,6 +164,23 @@ export class Manipulator3D{
         this._camera.getWorldQuaternion( this._3jsQuat );
 
         this.data.updateFromCamera( this._3jsVec.toArray(), this._3jsQuat.toArray(), forceUpdate );
+    }
+
+    addEventListeners(){
+        const canvas = this._getCanvas();
+        if (!canvas) return;
+        canvas.addEventListener( 'click', this._onClick);
+        canvas.addEventListener( 'pointermove', this._onPointerMove);
+        canvas.addEventListener( 'pointerdown', this._onPointerDown);
+        canvas.addEventListener( 'pointerup', this._onPointerUp);
+    }
+    removeEventListeners(){
+        const canvas = this._getCanvas();
+        if (!canvas) return;
+        canvas.removeEventListener( 'click', this._onClick);
+        canvas.removeEventListener( 'pointermove', this._onPointerMove);
+        canvas.removeEventListener( 'pointerdown', this._onPointerDown);
+        canvas.removeEventListener( 'pointerup', this._onPointerUp);
     }
     // #endregion
 
@@ -300,6 +289,43 @@ export class Manipulator3D{
         this.attachedObject.scale.fromArray( scl );
         this._emit( 'scale', scl );
     }
+
+    _onClick = ( e )=>{
+        if( this._stopClick ){
+            e.stopImmediatePropagation();
+            this._stopClick = false;
+        }
+    };
+
+    _onPointerMove = ( e )=>{
+        this.update();
+        this._updateRaycaster( e );
+
+        if( !this.data.isDragging ){
+            this.data.onRayHover( this._ray );
+        }else{
+            this.data.onRayMove( this._ray );
+            this._getCanvas().setPointerCapture( e.pointerId ); // Keep receiving events
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    _onPointerDown = ( e )=>{
+        this._updateRaycaster( e );
+        if( this.data.onRayDown( this._ray ) ){
+            e.preventDefault();
+            e.stopPropagation();
+            this._stopClick = true;
+        }
+    };
+
+    _onPointerUp = ( e )=>{
+        if( this.data.isDragging ){
+            this.data.stopDrag();
+            this._getCanvas().releasePointerCapture( e.pointerId );
+        }
+    };
     // #endregion
 
     // #region OUTER EVENTS{
