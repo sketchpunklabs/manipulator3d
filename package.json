@@ -32,13 +32,14 @@
         "dev": "vite",
         "build": "rollup -c"
     },
-    "dependencies": {
+    "peerDependencies": {
         "three": "^0.138.2"
     },
     "devDependencies": {
         "@babel/core": "^7.18.2",
         "@babel/preset-env": "^7.18.2",
         "@rollup/plugin-babel": "^5.3.1",
+        "three": "^0.138.2",
         "rollup": "^2.75.5",
         "vite": "^2.8.6"
     }
