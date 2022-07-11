@@ -39,6 +39,14 @@ export class Manipulator3D{
     _3jsVec             = new Vector3();
     _3jsQuat            = new Quaternion();
 
+    /**
+     * Special case when there is an onClick Handler on the canvas, it
+     * get triggered on mouse up, but if user did a drag action the click
+     * will trigger at the end. This can cause issues if using click as a way
+     * to select new attachments.
+     */
+    _stopClick          = false;
+
     constructor( scene, camera, renderer=null, excludeMesh=false ){
         this.data      = new ManipulatorData();
         this._camera   = camera;
@@ -64,47 +72,7 @@ export class Manipulator3D{
         const canvas   = renderer.domElement;
         this._renderer = renderer
 
-        // Special case when there is an onClick Handler on the canvas, it
-        // get triggered on mouse up, but if user did a drag action the click
-        // will trigger at the end. This can cause issues if using click as a way
-        // to select new attachments.
-        let stopClick = false;
-        canvas.addEventListener( 'click', e=>{
-            if( stopClick ){
-                e.stopImmediatePropagation();
-                stopClick = false;
-            }
-        });
-
-        canvas.addEventListener( 'pointermove', e=>{
-            this.update();
-            this._updateRaycaster( e );
-
-            if( !this.data.isDragging ){
-                this.data.onRayHover( this._ray );
-            }else{
-                this.data.onRayMove( this._ray );
-                canvas.setPointerCapture( e.pointerId ); // Keep receiving events
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        });
-
-        canvas.addEventListener( 'pointerdown', e=>{
-            this._updateRaycaster( e );
-            if( this.data.onRayDown( this._ray ) ){        
-                e.preventDefault();
-                e.stopPropagation();
-                stopClick = true;
-            }
-        } );
-
-        canvas.addEventListener( 'pointerup', e=>{
-            if( this.data.isDragging ){
-                this.data.stopDrag();
-                canvas.releasePointerCapture( e.pointerId );
-            }
-        });
+        this.addMouseListeners();
     }
     // #endregion
     
@@ -219,6 +187,63 @@ export class Manipulator3D{
         this._caster.setFromCamera( this._screenToNDCCoord( e ), this._camera );
         this._ray.fromCaster( this._caster );
     }
+    // #endregion
+
+    // #region MOUSE EVENTS
+    addMouseListeners(){
+        const canvas = this._renderer?.domElement;
+        if( !canvas ) return;
+        canvas.addEventListener( 'click',       this._onClick );
+        canvas.addEventListener( 'pointermove', this._onPointerMove );
+        canvas.addEventListener( 'pointerdown', this._onPointerDown );
+        canvas.addEventListener( 'pointerup',   this._onPointerUp );
+    }
+
+    removeMouseListeners(){
+        const canvas = this._renderer?.domElement;
+        if( !canvas ) return;
+        canvas.removeEventListener( 'click',       this._onClick );
+        canvas.removeEventListener( 'pointermove', this._onPointerMove );
+        canvas.removeEventListener( 'pointerdown', this._onPointerDown );
+        canvas.removeEventListener( 'pointerup',   this._onPointerUp );
+    }
+
+    _onClick = ( e ) => {
+        if( this._stopClick ){
+            e.stopImmediatePropagation();
+            this._stopClick = false;
+        }
+    };
+
+    _onPointerMove = ( e ) => {
+        this.update();
+        this._updateRaycaster( e );
+
+        if( !this.data.isDragging ){
+            this.data.onRayHover( this._ray );
+        }else{
+            this.data.onRayMove( this._ray );
+            this.renderer?.domElement.setPointerCapture( e.pointerId ); // Keep receiving events
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+
+    _onPointerDown = ( e ) => {
+        this._updateRaycaster( e );
+        if( this.data.onRayDown( this._ray ) ){
+            e.preventDefault();
+            e.stopPropagation();
+            this._stopClick = true;
+        }
+    };
+
+    _onPointerUp = ( e ) => {
+        if( this.data.isDragging ){
+            this.data.stopDrag();
+            this.renderer?.domElement.releasePointerCapture( e.pointerId );
+        }
+    };
     // #endregion
 
     // #region INNER EVENTS
