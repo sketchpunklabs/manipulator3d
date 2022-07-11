@@ -699,6 +699,41 @@ class Manipulator3D {
     __publicField(this, "_initDragScale", [0, 0, 0]);
     __publicField(this, "_3jsVec", new Vector3());
     __publicField(this, "_3jsQuat", new Quaternion());
+    __publicField(this, "_stopClick", false);
+    __publicField(this, "_onClick", (e) => {
+      if (this._stopClick) {
+        e.stopImmediatePropagation();
+        this._stopClick = false;
+      }
+    });
+    __publicField(this, "_onPointerMove", (e) => {
+      var _a;
+      this.update();
+      this._updateRaycaster(e);
+      if (!this.data.isDragging) {
+        this.data.onRayHover(this._ray);
+      } else {
+        this.data.onRayMove(this._ray);
+        (_a = this.renderer) == null ? void 0 : _a.domElement.setPointerCapture(e.pointerId);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    __publicField(this, "_onPointerDown", (e) => {
+      this._updateRaycaster(e);
+      if (this.data.onRayDown(this._ray)) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._stopClick = true;
+      }
+    });
+    __publicField(this, "_onPointerUp", (e) => {
+      var _a;
+      if (this.data.isDragging) {
+        this.data.stopDrag();
+        (_a = this.renderer) == null ? void 0 : _a.domElement.releasePointerCapture(e.pointerId);
+      }
+    });
     this.data = new ManipulatorData();
     this._camera = camera;
     if (!excludeMesh) {
@@ -715,41 +750,9 @@ class Manipulator3D {
     this.update(true);
   }
   setRenderer(renderer) {
-    const canvas = renderer.domElement;
+    renderer.domElement;
     this._renderer = renderer;
-    let stopClick = false;
-    canvas.addEventListener("click", (e) => {
-      if (stopClick) {
-        e.stopImmediatePropagation();
-        stopClick = false;
-      }
-    });
-    canvas.addEventListener("pointermove", (e) => {
-      this.update();
-      this._updateRaycaster(e);
-      if (!this.data.isDragging) {
-        this.data.onRayHover(this._ray);
-      } else {
-        this.data.onRayMove(this._ray);
-        canvas.setPointerCapture(e.pointerId);
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
-    canvas.addEventListener("pointerdown", (e) => {
-      this._updateRaycaster(e);
-      if (this.data.onRayDown(this._ray)) {
-        e.preventDefault();
-        e.stopPropagation();
-        stopClick = true;
-      }
-    });
-    canvas.addEventListener("pointerup", (e) => {
-      if (this.data.isDragging) {
-        this.data.stopDrag();
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    });
+    this.addMouseListeners();
   }
   rayHover(rayCaster) {
     this.update();
@@ -858,6 +861,26 @@ class Manipulator3D {
   _updateRaycaster(e) {
     this._caster.setFromCamera(this._screenToNDCCoord(e), this._camera);
     this._ray.fromCaster(this._caster);
+  }
+  addMouseListeners() {
+    var _a;
+    const canvas = (_a = this._renderer) == null ? void 0 : _a.domElement;
+    if (!canvas)
+      return;
+    canvas.addEventListener("click", this._onClick);
+    canvas.addEventListener("pointermove", this._onPointerMove);
+    canvas.addEventListener("pointerdown", this._onPointerDown);
+    canvas.addEventListener("pointerup", this._onPointerUp);
+  }
+  removeMouseListeners() {
+    var _a;
+    const canvas = (_a = this._renderer) == null ? void 0 : _a.domElement;
+    if (!canvas)
+      return;
+    canvas.removeEventListener("click", this._onClick);
+    canvas.removeEventListener("pointermove", this._onPointerMove);
+    canvas.removeEventListener("pointerdown", this._onPointerDown);
+    canvas.removeEventListener("pointerup", this._onPointerUp);
   }
   _onDragStart() {
     vec3_copy(this._initDragPosition, this.attachedObject.position.toArray());
