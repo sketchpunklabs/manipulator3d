@@ -696,7 +696,10 @@ class Manipulator3D {
     __publicField(this, "_intersectOffset", [0, 0, 0]);
     __publicField(this, "_initDragPosition", [0, 0, 0]);
     __publicField(this, "_initDragQuaternion", [0, 0, 0, 1]);
-    __publicField(this, "_initDragScale", [0, 0, 0]);
+    __publicField(this, "_initDragScale", [1, 1, 1]);
+    __publicField(this, "_currentPosition", [0, 0, 0]);
+    __publicField(this, "_currentQuaternion", [0, 0, 0, 1]);
+    __publicField(this, "_currentScale", [1, 1, 1]);
     __publicField(this, "_3jsVec", new Vector3());
     __publicField(this, "_3jsQuat", new Quaternion());
     __publicField(this, "_stopClick", false);
@@ -786,6 +789,12 @@ class Manipulator3D {
       this.updateStateFromCamera();
     return this;
   }
+  moveTo(p) {
+    this.data.setPosition(p);
+    this.data.calcAxesPosition();
+    this.update(true);
+    return this;
+  }
   useTranslate(b) {
     this.data.useTranslate = b;
     this.mesh.updateLook(this.data);
@@ -817,16 +826,23 @@ class Manipulator3D {
     this.data.scaleFactor = n;
     return this;
   }
+  resetInitialValues(q = [0, 0, 0, 1], s = [1, 1, 1]) {
+    if (s)
+      vec3_copy(this._initDragScale, s);
+    if (q)
+      quat_copy(this._initDragQuaternion, q);
+    return this;
+  }
   attach(obj) {
     if (!this.data.isActive)
       return;
     this.attachedObject = obj;
-    this.data.setPosition(obj.position.toArray());
-    this.data.calcAxesPosition();
-    this.update(true);
+    this.moveTo(obj.position.toArray());
+    return this;
   }
   detach() {
     this.attachedObject = null;
+    return this;
   }
   update(forceUpdate = false) {
     if (!this.data.isActive && !forceUpdate)
@@ -883,9 +899,15 @@ class Manipulator3D {
     canvas.removeEventListener("pointerup", this._onPointerUp);
   }
   _onDragStart() {
-    vec3_copy(this._initDragPosition, this.attachedObject.position.toArray());
-    vec3_copy(this._initDragScale, this.attachedObject.scale.toArray());
-    quat_copy(this._initDragQuaternion, this.attachedObject.quaternion.toArray());
+    if (this.attachedObject) {
+      vec3_copy(this._initDragPosition, this.attachedObject.position.toArray());
+      vec3_copy(this._initDragScale, this.attachedObject.scale.toArray());
+      quat_copy(this._initDragQuaternion, this.attachedObject.quaternion.toArray());
+    } else {
+      vec3_copy(this._initDragPosition, this._currentPosition);
+      vec3_copy(this._initDragScale, this._currentScale);
+      quat_copy(this._initDragQuaternion, this._currentQuaternion);
+    }
     vec3_sub(this._intersectOffset, this.data.position, this.data.intersectPos);
     if (this.data.activeMode !== ManipulatorMode.Translate) {
       this.mesh.hideGizmo();
@@ -902,7 +924,9 @@ class Manipulator3D {
   _onTranslate(pos) {
     const offsetPos = vec3_add([0, 0, 0], pos, this._intersectOffset);
     this.data.setPosition(offsetPos);
-    this.attachedObject.position.fromArray(offsetPos);
+    if (this.attachedObject)
+      this.attachedObject.position.fromArray(offsetPos);
+    vec3_copy(this._currentPosition, offsetPos);
     this._emit("translate", pos);
   }
   _onRotate(steps, iAxis) {
@@ -910,7 +934,9 @@ class Manipulator3D {
     const q = quat_setAxisAngle([0, 0, 0, 1], this.data.axes[iAxis].dir, this._rotateStep * steps * sign);
     quat_mul(q, q, this._initDragQuaternion);
     quat_normalize(q, q);
-    this.attachedObject.quaternion.fromArray(q);
+    if (this.attachedObject)
+      this.attachedObject.quaternion.fromArray(q);
+    quat_copy(this._currentQuaternion, q);
     this._emit("rotate", q);
   }
   _onScale(steps, iAxis) {
@@ -923,7 +949,9 @@ class Manipulator3D {
     } else {
       scl[iAxis] += inc * Math.sign(this.data.scale[iAxis]);
     }
-    this.attachedObject.scale.fromArray(scl);
+    if (this.attachedObject)
+      this.attachedObject.scale.fromArray(scl);
+    vec3_copy(this._currentScale, scl);
     this._emit("scale", scl);
   }
   on(evtName, fn) {
