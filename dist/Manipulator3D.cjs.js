@@ -794,6 +794,7 @@ class Manipulator3D {
   moveTo(p) {
     this.data.setPosition(p);
     this.data.calcAxesPosition();
+    vec3_copy(this._currentPosition, p);
     this.update(true);
     return this;
   }
@@ -929,7 +930,7 @@ class Manipulator3D {
     if (this.attachedObject)
       this.attachedObject.position.fromArray(offsetPos);
     vec3_copy(this._currentPosition, offsetPos);
-    this._emit("translate", pos);
+    this._emit("translate", offsetPos);
   }
   _onRotate(steps, iAxis) {
     const sign = iAxis === 1 ? 1 : -Math.sign(this.data.scale[iAxis]);
@@ -958,9 +959,11 @@ class Manipulator3D {
   }
   on(evtName, fn) {
     this._renderer.domElement.addEventListener(evtName, fn);
+    return this;
   }
   off(evtName, fn) {
     this._renderer.domElement.removeEventListener(evtName, fn);
+    return this;
   }
   _emit(evtName, detail = null) {
     this._renderer.domElement.dispatchEvent(new CustomEvent(evtName, { detail, bubbles: true, cancelable: true, composed: false }));

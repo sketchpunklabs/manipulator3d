@@ -22,7 +22,7 @@ npm install
 npm run dev
 ```
 
-## Usage ###
+## Usage with attachment ###
 ```javascript
 import { Manipulator3D } from 'Manipulator3D';
 
@@ -43,9 +43,28 @@ man.on( 'dragend', ()=>{   orbitControl.enabled = true; } );
 // man.on( 'rotate', e=>console.log( 'Rotate( Quat )', e.detail ) );
 // man.on( 'scale', e=>console.log( 'Scale', e.detail ) );
 
-// Turn on gizmo
+// Turn on Control
 man.setActive( true );
 
 // Attach object to manipulate
 man.attach( cube );
+```
+
+## Usage of translation without attachment ###
+```javascript
+import { Manipulator3D } from 'Manipulator3D';
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+const man = new Manipulator3D( scene, camera, renderer );
+
+// Hook into events to disable camera controller when user does a drag action
+man.on( 'dragstart', ()=>{ orbitControl.enabled = false; } );
+man.on( 'dragend', ()=>{   orbitControl.enabled = true; } );
+
+// Hook into events to see the changes happen
+man.on( 'translate', e=>console.log( 'Translate', e.detail ) );
+
+man.setActive( true );  // Turn on Control
+man.useRotate( false ); // Turn off Rotation
+man.useScale( false );  // Turn off Scale
 ```
