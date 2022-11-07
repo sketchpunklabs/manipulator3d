@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title></title></head><body>
+<script type="module">
+
+window.addEventListener( "load", async _=>{
+    const state = StateProxy.new( { size:1, woot:'eep' } );
+    console.log( state );
+    state.$
+        .on( 'sizeChange', e=>console.log( 'sizeChange', e.detail ) )
+        .on( 'change', e=>console.log( 'change', e.detail ) )
+    ; 
+
+    state.size = 2;
+    console.log( state );
+
+    state.$.update( { woot:'weee', yo:'row' } );
+    console.log( state );
+});
+
+class StateProxy{
+    // #region MAIN
+    static new( data={} ){ return new Proxy( data, new StateProxy( data ) ); }
+
+    constructor( data ){
+        this._data   = data;
+        this._events = new EventTarget();
+    }
+    // #endregion
+
+    // #region METHODS
+    update( struct ){
+        Object.assign( this._data, struct );
+        this.emit( 'change', null );
+        return this;
+    }
+    // #endregion
+
+    // #region PROXY TRAPS
+    get( target, prop, receiver ){
+        // console.log( "GET", "target", target, "prop", prop, "rec", receiver );    
+        if( prop === '$' ) return this;
+        return Reflect.get( target, prop, receiver ); //target[ prop ];
+    }
+
+    set( target, prop, value ){
+        // console.log( "SET", "target", target, "prop", prop, "value", value );
+        if( prop === '$' ) return false;
+        Reflect.set( target, prop, value );     // Save data to Object
+        this.emit( prop+'Change', value );      // Emit event that property changed
+        this.emit( 'change', { prop, value } ); // Emit event that any propery changed
+        return true;
+    }
+    // #endregion
+
+    // #region EVENTS
+    on( evtName, fn ){   this._events.addEventListener( evtName, fn ); return this; }
+    off( evtName, fn){   this._events.removeEventListener( evtName, fn ); return this; }
+    once( evtName, fn ){ this._events.addEventListener( evtName, fn, { once:true } ); return this; }
+    emit( evtName, data ){
+        this._events.dispatchEvent( new CustomEvent( evtName, { detail:data, bubbles: false, cancelable:true, composed:false } ) );
+        return this;
+    }
+    // #endregion
+}
+
+</script>
+</body></html>

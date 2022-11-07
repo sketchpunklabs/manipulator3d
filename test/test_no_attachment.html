@@ -13,7 +13,8 @@ import { Manipulator3D }            from '../src/index.js';
 
 // #region MAIN
 let App;
-let Ref = {};
+let Debug = {};
+let Ref   = {};
 
 function onRender( dt=0, et=0 ){
     if( Ref.debugger ) Ref.debugger.update( Ref.man.data, true );

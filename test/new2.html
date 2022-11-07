@@ -1,0 +1,113 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title></title></head><body>
+<script type="module">
+// #region IMPORTS
+import Starter, { THREE }           from './_lib/Starter.js';
+import facedCube                    from './_lib/FacedCube.js';
+import ShapePointsMesh              from './_lib/ShapePointsMesh.js';
+import DynLineMesh                  from './_lib/DynLineMesh.js';
+
+import Manipulator3D    from '../src3/Manipulator3D.js';
+import Mesh3JS          from '../src3/render/Mesh3JS.js';
+import { quat_setAxisAngle } from '../src3/lib/Maths.js';
+
+// #endregion
+
+// #region MAIN
+let App;
+let Debug = {};
+let Ref   = {
+    debugger : true,
+};
+
+function onRender( dt=0, et=0 ){
+    if( Ref.debugger ){
+        // Ref.man.state.updateFromCamera( App.camera.position.toArray(), App.camera.quaternion.toArray() );
+
+        //if( Ref.man.state.isDragging ){}
+
+        // debugRender( Ref.man.state );
+
+        Ref.man.update();
+    }
+}
+
+window.addEventListener( "load", async _=>{
+    App = new Starter( { webgl2:true, grid:true } );
+    App.setCamera( 45, 20, 8, [0,0.8,0] );
+    App.onRender = onRender;
+
+    App.add( ( Debug.pnt = new ShapePointsMesh() ) );
+    App.add( ( Debug.ln  = new DynLineMesh() ) );
+    // App.add( ( Ref.cube  = facedCube() ) );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Ref.obj = facedCube( null, 1.0 );
+    Ref.obj.position.set( 0, 1, 0 );
+    Ref.obj.rotation.x = Math.PI * -0.15;
+    App.add( Ref.obj );
+
+    // Ref.axis = new THREE.AxesHelper( 5 );
+    // App.add( Ref.axis );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    Ref.man = Manipulator3D( App.camera, App.renderer, Debug );
+    Ref.man.events
+        .on( 'dragStart', ()=>App.orbit.enabled = false )
+        .on( 'dragEnd',   ()=>App.orbit.enabled = true  )
+        //.on( 'transform', e=>console.log( 'Transform', e.detail ) )
+    ;
+
+    const q = quat_setAxisAngle( [0,0,0,0], [1,0,0], Math.PI * -0.15 );
+    Ref.man.setRotation( q ).setPosition( [0,0.5,0] );
+
+    Ref.man.attach( Ref.obj );
+
+    App.add( Ref.man.mesh );
+    // Ref.man.state.position.set( [1,1,0] );
+    // Ref.man.state.rotation.setAxisAngle( [1,0,0], Math.PI * -0.25 );
+
+    // Ref.man.on( 'dragstart', ()=>{ App.orbit.enabled = false;  });
+    // Ref.man.on( 'dragend', ()=>{ App.orbit.enabled = true; });
+
+    //Ref.man.update();
+    //debugRender( Ref.man );
+
+    //Ref.axis.position.fromArray( Ref.man.position.value );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.render();
+});
+
+
+
+function debugRender( man ){
+    Debug.pnt.reset();
+    Debug.ln.reset();
+
+    const pos  = man.position.value;
+    const orot = man.rotation;
+
+    // Draw Rotated Axis
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.xAxis ), 0xff0000 );
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.yAxis ), 0x0000ff );
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.zAxis ), 0x00ff00 );
+
+    // Draw Main Points
+    Debug.pnt.add( pos, 0x00ff00, 5 );
+    Debug.pnt.add( man.position.xEndPoint, 0xff0000, 5 );
+    Debug.pnt.add( man.position.yEndPoint, 0x0000ff, 5 );
+    Debug.pnt.add( man.position.zEndPoint, 0x00ff00, 5 );
+
+    // Draw Arc
+    Debug.ln.arc( pos, orot.xAxisScl, orot.zAxisScl, 1, 6, Math.PI*0.5, 0, 0x00ffff );
+    Debug.ln.arc( pos, orot.yAxisScl, orot.zAxisScl, 1, 6, Math.PI*0.5, 0, 0xffff00 );
+    Debug.ln.arc( pos, orot.yAxisScl, orot.xAxisScl, 1, 6, Math.PI*0.5, 0, 0x00ff00 );
+}
+
+// #endregion
+
+</script>
+</body></html>

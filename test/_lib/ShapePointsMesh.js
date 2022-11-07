@@ -25,6 +25,8 @@ class ShapePointsMesh extends THREE.Points{
         this.onBeforeRender = ()=>{ if( this._dirty ) this._updateGeometry(); }
     }
 
+    useDepth( b ){ this.material.depthTest = b; return this; }
+
     reset(){
 		this._cnt           = 0;
 		this._verts.length  = 0;

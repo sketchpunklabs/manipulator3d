@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title></title></head><body>
+<script type="module">
+// #region IMPORTS
+import Starter, { THREE }           from './_lib/Starter.js';
+import facedCube                    from './_lib/FacedCube.js';
+import ShapePointsMesh              from './_lib/ShapePointsMesh.js';
+import DynLineMesh                  from './_lib/DynLineMesh.js';
+
+// import ManipulatorState from './ManipulatorState.js';
+// import ManipulatorMode  from './ManipulatorMode.js';
+// import MouseEvents      from './MouseEvents.js';
+
+import Manipulator3D    from '../src2/Manipulator3D.js';
+
+import {
+    vec3_add,
+    vec3_sub,
+    vec3_len,
+    vec3_copy,
+    vec3_transformQuat,
+    vec3_norm,
+    vec3_dot,
+    vec3_scale,
+    vec3_scaleAndAdd,
+    vec3_sqrLen,
+    quat_mul,
+    quat_normalize,
+    quat_copy,
+    quat_sqrLen,
+    quat_setAxisAngle,
+} from '../src/Maths.js';
+
+import {
+    Ray,
+    intersectPlane,
+    intersectTri,
+    intersectSphere,
+    nearPoint,
+    NearSegmentResult,
+    nearSegment,
+} from '../src/RayIntersection.js';
+// #endregion
+
+// #region MAIN
+let App;
+let Debug = {};
+let Ref   = {
+    debugger : true,
+};
+
+function onRender( dt=0, et=0 ){
+    if( Ref.debugger ){
+        Ref.man.state.updateFromCamera( App.camera.position.toArray(), App.camera.quaternion.toArray() );
+
+        //if( Ref.man.state.isDragging ){}
+
+        debugRender( Ref.man.state );
+    }
+}
+
+window.addEventListener( "load", async _=>{
+    App = new Starter( { webgl2:true, grid:true } );
+    App.setCamera( 20, 20, 13, [0,0.8,0] );
+    App.onRender = onRender;
+
+    App.add( (Debug.pnt = new ShapePointsMesh() ) );
+    App.add( (Debug.pnt2 = new ShapePointsMesh() ) );
+    App.add( (Debug.ln  = new DynLineMesh() ) );
+    App.add( (Debug.ln2  = new DynLineMesh() ) );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Ref.obj = facedCube( null, 0.5 );
+    // Ref.obj.position.set( 0, 1, 0 );
+    // App.add( Ref.obj );
+
+    // Ref.axis = new THREE.AxesHelper( 5 );
+    // App.add( Ref.axis );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    Ref.man = new Manipulator3D( App.camera, App.renderer );
+    Ref.man.state.position.set( [1,1,0] );
+    Ref.man.state.rotation.setAxisAngle( [1,0,0], Math.PI * -0.25 );
+
+    Ref.man.on( 'dragstart', ()=>{ App.orbit.enabled = false;  });
+    Ref.man.on( 'dragend', ()=>{ App.orbit.enabled = true; });
+
+    //Ref.man.update();
+    //debugRender( Ref.man );
+
+    //Ref.axis.position.fromArray( Ref.man.position.value );
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    App.render();
+});
+
+/*
+ManipulatorState
+- Maintain the main data needed for transforms & ray intersection testing
+--- Position State : Keeps position & current axes end points
+
+Manipulator3D
+- Main interface
+- Handle 3JS related bits
+
+MouseEvents
+- Handle Mouse Events on the canvas
+
+WHE
+
+// https://codesandbox.io/s/object-gizmo-controls-om2ff8
+/ https://github.com/pmndrs/drei/pull/1025/files
+// Pivot rotation, Think about it having a parent that you apply
+the rotation on while the child is locally placed in the right spot where
+it's rotation appears to be coming from a new origin.
+*/
+
+function debugRender( man ){
+    Debug.pnt.reset();
+    Debug.ln.reset();
+
+    const pos  = man.position.value;
+    const orot = man.rotation;
+
+    // Draw Rotated Axis
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.xAxis ), 0xff0000 );
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.yAxis ), 0x0000ff );
+    Debug.ln.add( pos, vec3_add( [0,0,0], pos, man.rotation.zAxis ), 0x00ff00 );
+
+    // Draw Main Points
+    Debug.pnt.add( pos, 0x00ff00, 5 );
+    Debug.pnt.add( man.position.xEndPoint, 0xff0000, 5 );
+    Debug.pnt.add( man.position.yEndPoint, 0x0000ff, 5 );
+    Debug.pnt.add( man.position.zEndPoint, 0x00ff00, 5 );
+
+    // Draw Arc
+    Debug.ln.arc( pos, orot.xAxisScl, orot.zAxisScl, 1, 6, Math.PI*0.5, 0, 0x00ffff );
+    Debug.ln.arc( pos, orot.yAxisScl, orot.zAxisScl, 1, 6, Math.PI*0.5, 0, 0xffff00 );
+    Debug.ln.arc( pos, orot.yAxisScl, orot.xAxisScl, 1, 6, Math.PI*0.5, 0, 0x00ff00 );
+}
+
+// #endregion
+
+</script>
+</body></html>

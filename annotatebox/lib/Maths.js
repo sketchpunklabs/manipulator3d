@@ -13,6 +13,20 @@ export function vec3_add( out, a, b ){
     return out;
 }
 
+export function vec3_add_batch( out, ...ary ){
+    out[ 0 ] = ary[ 0 ][ 0 ];
+    out[ 1 ] = ary[ 0 ][ 1 ];
+    out[ 2 ] = ary[ 0 ][ 2 ];
+
+    for( let i=1; i < ary.length; i++ ){
+        out[ 0 ] += ary[ i ][ 0 ];
+        out[ 1 ] += ary[ i ][ 1 ];
+        out[ 2 ] += ary[ i ][ 2 ];
+    }
+
+    return out;
+}
+
 export function vec3_sub( out, a, b ){
     out[ 0 ] = a[ 0 ] - b[ 0 ];
     out[ 1 ] = a[ 1 ] - b[ 1 ];
@@ -46,6 +60,13 @@ export function vec3_scale( out, a, s ){
     return out;
 }
 
+export function vec3_inv_scale( out, a, s ){
+    out[ 0 ] = a[ 0 ] / s;
+    out[ 1 ] = a[ 1 ] / s;
+    out[ 2 ] = a[ 2 ] / s;
+    return out;
+}
+
 export function vec3_norm( out, a){
     let mag = Math.sqrt( a[ 0 ]**2 + a[ 1 ]**2 + a[ 2 ]**2 );
     if( mag != 0 ){
@@ -54,6 +75,13 @@ export function vec3_norm( out, a){
         out[ 1 ] = a[ 1 ] * mag;
         out[ 2 ] = a[ 2 ] * mag;
     }
+    return out;
+}
+
+export function vec3_negate( out, a){
+    out[ 0 ] = -a[ 0 ];
+    out[ 1 ] = -a[ 1 ];
+    out[ 2 ] = -a[ 2 ];
     return out;
 }
 
@@ -105,6 +133,22 @@ export function vec3_lerp( out, a, b, t ) {
     out[ 2 ] = a[ 2 ] * ti + b[ 2 ] * t;
     return out;
 }
+
+
+export function vec3_angle( a, b ){
+    const ax     = a[0];
+    const ay     = a[1];
+    const az     = a[2];
+    const bx     = b[0];
+    const by     = b[1];
+    const bz     = b[2];
+    const mag1   = Math.sqrt( ax * ax + ay * ay + az * az );
+    const mag2   = Math.sqrt( bx * bx + by * by + bz * bz );
+    const mag    = mag1 * mag2;
+    const cosine = mag && vec3_dot( a, b ) / mag;
+    return Math.acos( Math.min( Math.max( cosine, -1 ), 1 ) );
+  }
+
 // #endregion
 
 // #region QUAT
@@ -153,6 +197,35 @@ export function quat_sqrLen( a, b ){
     return (a[ 0 ]-b[ 0 ]) ** 2 + (a[ 1 ]-b[ 1 ]) ** 2 + (a[ 2 ]-b[ 2 ]) ** 2 + (a[ 3 ]-b[ 3 ]) ** 2;
 }
 
+
+export function quat_rotateTo( out, a, b ){
+    // Using unit vectors, Shortest rotation from Direction A to Direction B
+    // http://glmatrix.net/docs/quat.js.html#line548
+    // http://physicsforgames.blogspot.com/2010/03/Quat-tricks.html
+
+    const dot = vec3_dot( a, b );
+
+    if( dot < -0.999999 ){ // 180 opposites
+      const tmp = vec3_cross( [0,0,0], [1,0,0], a );
+      if( vec3_len( tmp ) < 0.000001 ) vec3_cross( tmp, [0,1,0], a );
+      quat_setAxisAngle( out, vec3.quat_normalize( tmp, tmp ), Math.PI );
+
+    }else if( dot > 0.999999 ){ // Same Direction
+        out[ 0 ] = 0;
+        out[ 1 ] = 0;
+        out[ 2 ] = 0;
+        out[ 3 ] = 1;
+    }else{
+        const v = vec3_cross( [0,0,0], a, b );
+        out[ 0 ] = v[ 0 ];
+        out[ 1 ] = v[ 1 ];
+        out[ 2 ] = v[ 2 ];
+        out[ 3 ] = 1 + dot;
+        quat_normalize( out, out );
+    }
+
+    return out;
+}
 // #endregion
 
 // #region MAT4

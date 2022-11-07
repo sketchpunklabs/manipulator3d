@@ -25,10 +25,9 @@ export class Ray{
 
     // #region GETTERS / SETTERS
     /** Get position of the ray from T Scale of VecLen */
-    posAt( t, out){
+    posAt( t, out=[0,0,0] ){
         // RayVecLen * t + RayOrigin
         // also works lerp( RayOrigin, RayEnd, t )
-        out      = out || [0,0,0];
         out[ 0 ] = this.vecLength[ 0 ] * t + this.posStart[ 0 ];
         out[ 1 ] = this.vecLength[ 1 ] * t + this.posStart[ 1 ];
         out[ 2 ] = this.vecLength[ 2 ] * t + this.posStart[ 2 ];
@@ -205,4 +204,76 @@ export function nearSegment( ray, p0, p1, results=null){
     }
 
     return true;
+}
+
+/** Points should be in CCW order, won't work correctly if not in order */
+export function intersectQuadOLD( ray, v0, v1, v2, v3, debug ){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Figure out the normal direction of the quad
+    // To find normal direction, take 3 sequential corners, get two vector 
+    // lengths then cross apply in counter-clockwise order
+    const a     = vec3_sub( [0,0,0], v0, v1 );
+    const b     = vec3_sub( [0,0,0], v2, v1 );
+    const norm  = vec3_cross( [0,0,0], b, a );
+    vec3_norm( norm, norm );
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Determine if the ray intersects the same plane of the quad.
+    const t = intersectPlane( ray, v0, norm );
+    if( t == null ) return null;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // First Diagonal Test - Projecting intersection point onto Left Side of Quad
+    const ip    = ray.posAt( t );
+    let   tt    = 0;
+
+    vec3_sub( a, ip, v0 );    // Top Corner to Plane Intersection Point
+    vec3_sub( b, v1, v0 );    // Left Edge
+    tt = vec3_dot( a, b ) / vec3_sqrLen( b ); // PROJECTION : |a|.|b| / |b|.|b| 
+    
+    if( tt < 0 || tt > 1 ) return null;
+
+    // Second Diagonal Test - Projecting intersection point onto bottom Side of Quad
+    vec3_sub( a, ip, v1 );    // Bottom Corner to Plane Intersection Point
+    vec3_sub( b, v2, v1 );    // Bottom Edge
+    tt = vec3_dot( a, b ) / vec3_sqrLen( b );
+
+    if( tt < 0 || tt > 1 ) return null;
+
+    return t;
+}
+
+// Points need to be coplanar and in wither CW or CCW order
+export function intersectQuad( ray, v0, v1, v2, v3, hitPos=[0,0,0], cullBackface=true ){
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Figure out the normal direction of the quad
+    // To find normal direction, take 3 sequential corners, get two vector 
+    // lengths then cross apply in counter-clockwise order
+    const a     = vec3_sub( [0,0,0], v0, v1 );
+    const b     = vec3_sub( [0,0,0], v2, v1 );
+    const norm  = vec3_cross( [0,0,0], b, a );
+    vec3_norm( norm, norm );
+
+    if( cullBackface && vec3_dot( ray.direction, norm ) >= 0 ) return null;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Determine if the ray intersects the same plane as the quad.
+    const denom = vec3_dot( ray.vecLength, norm );    // Dot product of ray Length and plane normal
+    if( Math.abs( denom ) <= 0.000001 ) return null;
+
+    const t = vec3_dot( vec3_sub( [0,0,0], v1, ray.posStart ), norm ) / denom;
+    if( t < 0 ) return null;
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // First Diagonal Test - Projecting intersection point onto Left Side of Quad
+    ray.posAt( t, hitPos );
+    const dm    = vec3_sub( [0,0,0], hitPos, v1 );
+    const u     = vec3_dot( dm, a );
+    const v     = vec3_dot( dm, b );
+
+    return (
+        u >= 0.0 && u <= vec3_dot( a, a )
+        &&
+        v >= 0.0 && v <= vec3_dot( b, b )
+    )? t : null;
 }
