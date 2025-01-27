@@ -1,0 +1,24 @@
+
+
+https://codesandbox.io/s/object-gizmo-controls-om2ff8?file=/src/pivot/AxisRotator.js:3237-3260
+Nice widget, Very interested in the pivot rotation
+
+        const { clickPoint, origin, e1, e2, normal, plane } = clickInfo.current
+        ray.copy(e.ray)
+        ray.intersectPlane(plane, intersection)
+        ray.direction.negate()
+        ray.intersectPlane(plane, intersection)
+        let angle = calculateAngle(clickPoint, intersection, origin, e1, e2)
+        let degrees = toDegrees(angle)
+
+        if (e.shiftKey) {
+          degrees = Math.round(degrees / 10) * 10
+          angle = toRadians(degrees)
+        }
+
+        divRef.current.innerText = degrees.toFixed(0) + 'º'
+
+        rotMatrix.makeRotationAxis(normal, angle)
+        posNew.copy(origin).applyMatrix4(rotMatrix).sub(origin).negate()
+        rotMatrix.setPosition(posNew)
+        onDrag(rotMatrix)
